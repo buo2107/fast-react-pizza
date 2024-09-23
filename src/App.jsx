@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "./ui/Home";
-import Menu from "./features/menu/Menu";
+import Menu, { loader as menuLoader } from "./features/menu/Menu";
 import Cart from "./features/cart/Cart";
 import CreateOrder from "./features/order/CreateOrder";
 import Order from "./features/order/Order";
@@ -24,6 +24,8 @@ function App() {
         {
           path: "/menu",
           element: <Menu />,
+          // React Router will start fetching the data at the same time as it starts rendering the correct route.
+          loader: menuLoader,
         },
         {
           path: "/cart",
