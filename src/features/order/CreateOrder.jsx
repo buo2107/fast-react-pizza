@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Form, redirect } from "react-router-dom";
+import { createOrder } from "../../services/apiRestaurant";
 
 // https://uibakery.io/regex-library/phone-number
 const isValidPhone = (str) =>
@@ -38,7 +40,7 @@ function CreateOrder() {
     <div>
       <h2>Ready to order? Let&apos;s go!</h2>
 
-      <form>
+      <Form method="POST">
         <div>
           <label>First Name</label>
           <input type="text" name="customer" required />
@@ -70,11 +72,32 @@ function CreateOrder() {
         </div>
 
         <div>
+          {/* Input value should be a string, so we change the format of cart */}
+          <input type="hidden" name="cart" value={JSON.stringify(cart)} />
           <button>Order now</button>
         </div>
-      </form>
+      </Form>
     </div>
   );
+}
+
+export async function action({ request }) {
+  // .formData() is just a regular WebAPI which is provided by the browser
+  const formData = await request.formData();
+  // Convert formData(HTML5 object) to Object
+  const data = Object.fromEntries(formData);
+
+  // Convert received data's format to what we want it to be, ex: 'priority' use true/false,  'cart' is a JSON data
+  const order = {
+    ...data,
+    cart: JSON.parse(data.cart),
+    priority: data.priority === "on",
+  };
+
+  const newOrder = await createOrder(order);
+
+  // redirect() is similar to navigate(), since hook can only use in component, so here we use redirect() to replace.
+  return redirect(`/order/${newOrder.id}`);
 }
 
 export default CreateOrder;
