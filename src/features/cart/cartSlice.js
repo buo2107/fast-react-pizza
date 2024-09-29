@@ -55,6 +55,8 @@ export default cartSlice.reducer;
 // Redux recommends to take this kind of functions here
 // However, having these selector functions here like this might cause performance issues in larger applications.
 // if you are really serious about Redux, you can look into the 'reselect' library
+export const getCart = (state) => state.cart.cart;
+
 export const getTotalCartQuantity = (state) =>
   state.cart.cart.reduce((sum, item) => sum + item.quantity, 0);
 
