@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function Button({ children, disabled, to, type }) {
+function Button({ children, disabled, to, type, onClick }) {
   /* Create a mechanism to reuse the style(className) */
 
   // The base style is what will be common to all the Buttons
@@ -21,6 +21,14 @@ function Button({ children, disabled, to, type }) {
       <Link className={styles[type]} to={to}>
         {children}
       </Link>
+    );
+
+  // Deal with the button which has event handler
+  if (onClick)
+    return (
+      <button onClick={onClick} disabled={disabled} className={styles[type]}>
+        {children}
+      </button>
     );
 
   return (
