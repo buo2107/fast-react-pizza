@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Form, redirect, useActionData, useNavigation } from "react-router-dom";
 import { createOrder } from "../../services/apiRestaurant";
 import Button from "../../ui/Button";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { clearCart, getCart, getTotalCartPrice } from "../cart/cartSlice";
 import { formatCurrency } from "../../utils/helpers";
 import EmptyCart from "../cart/EmptyCart";
 import store from "../../store";
+import { fetchAddress } from "../user/userSlice";
 
 // https://uibakery.io/regex-library/phone-number
 const isValidPhone = (str) =>
@@ -39,7 +40,14 @@ const isValidPhone = (str) =>
 // ];
 
 function CreateOrder() {
-  const username = useSelector((state) => state.user.username);
+  const {
+    username,
+    status: addressStatus,
+    position,
+    address,
+    error: errorAddress,
+  } = useSelector((state) => state.user);
+  const isLoadingAddress = addressStatus === "loading";
   const [withPriority, setWithPriority] = useState(false);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -52,6 +60,8 @@ function CreateOrder() {
   const totalCartPrice = useSelector(getTotalCartPrice);
   const priority = withPriority ? totalCartPrice * 0.2 : 0;
   const totalPrice = totalCartPrice + priority;
+
+  const dispatch = useDispatch();
 
   if (cart.length === 0) return <EmptyCart />;
 
@@ -86,15 +96,37 @@ function CreateOrder() {
           </div>
         </div>
 
-        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sm:basis-40">Address</label>
-          <div className="grow">
+          <div className="relative grow">
             <input
               className="input w-full"
               type="text"
               name="address"
+              disabled={isLoadingAddress}
+              defaultValue={address}
               required
             />
+            {addressStatus === "error" && (
+              <p className="absolute right-2 rounded-md bg-red-100 p-2 text-xs text-red-700">
+                {errorAddress}
+              </p>
+            )}
+            {!position.longitude && !position.latitude && (
+              <span className="absolute bottom-1 right-1 z-50">
+                <Button
+                  disabled={isLoadingAddress}
+                  type="small"
+                  onClick={(e) => {
+                    // Because this Button now is inside the Form
+                    e.preventDefault();
+                    dispatch(fetchAddress());
+                  }}
+                >
+                  get position
+                </Button>
+              </span>
+            )}
           </div>
         </div>
 
@@ -118,8 +150,18 @@ function CreateOrder() {
           {/* !!! TRICK: The order need to contain the cart data, but hook can only use in component, so we cannot call the useSelector() in the action().
           Therefore, we use this input-hidden, whitch user would not see on UI, to send the cart data as one of form data, then action() can receive it.
            */}
+          <input
+            type="hidden"
+            name="position"
+            value={
+              //When the user denies the geolocation or if there is some other problem with geolocation, then we do not get this position right here. But still, we want to allow the user to submit the form in that situation.
+              position.latitude && position.longitude
+                ? `${position.latitude},${position.longitude}`
+                : ""
+            }
+          />
 
-          <Button type="primary" disabled={isSubmitting}>
+          <Button type="primary" disabled={isSubmitting || isLoadingAddress}>
             {isSubmitting
               ? "Placing order..."
               : `Order now from ${formatCurrency(totalPrice)}`}
